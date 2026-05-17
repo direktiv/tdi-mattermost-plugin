@@ -1,8 +1,9 @@
 const path = require('path');
 const PLUGIN_ID = require('../plugin.json').id;
+const includeClassifyRHS = process.env.INCLUDE_CLASSIFY_RHS === 'true';
 
 module.exports = {
-  entry: ['./src/index.jsx'],
+  entry: [includeClassifyRHS ? './src/index.jsx' : './src/index.public.jsx'],
   resolve: {
     modules: ['src', 'node_modules'],
     extensions: ['.js', '.jsx'],

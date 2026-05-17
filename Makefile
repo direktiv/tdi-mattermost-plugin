@@ -21,7 +21,7 @@ build:
 .PHONY: webapp
 webapp:
 	@echo "Building webapp..."
-	cd webapp && npm ci && npm run build
+	cd webapp && npm ci && INCLUDE_CLASSIFY_RHS=$(INCLUDE_WEBAPP) npm run build
 
 ## Bundle the plugin for distribution
 ## Mattermost expects plugin.json at the ROOT of the extracted archive (no top-level folder)
@@ -29,7 +29,7 @@ webapp:
 ifeq ($(INCLUDE_WEBAPP),true)
 bundle: build webapp
 else
-bundle: build
+bundle: build webapp
 endif
 	@echo "Creating plugin bundle..."
 	rm -rf dist/bundle
@@ -40,7 +40,9 @@ ifeq ($(INCLUDE_WEBAPP),true)
 	cp webapp/dist/main.js dist/bundle/webapp/dist/
 	cp plugin.json dist/bundle/
 else
-	node -e "const fs=require('fs'); const manifest=require('./plugin.json'); delete manifest.webapp; fs.writeFileSync('dist/bundle/plugin.json', JSON.stringify(manifest, null, 2) + '\n');"
+	mkdir -p dist/bundle/webapp/dist
+	cp webapp/dist/main.js dist/bundle/webapp/dist/
+	node -e "const fs=require('fs'); const manifest=require('./plugin.json'); if (manifest.settings_schema?.settings) manifest.settings_schema.settings = manifest.settings_schema.settings.filter((setting) => setting.key !== 'MattermostAPIToken'); fs.writeFileSync('dist/bundle/plugin.json', JSON.stringify(manifest, null, 2) + '\n');"
 endif
 	cd dist/bundle && tar -czf ../$(BUNDLE_NAME) .
 	@echo "Plugin bundle created: dist/$(BUNDLE_NAME)"
@@ -76,8 +78,8 @@ help:
 	@echo "Available targets:"
 	@echo "  build        - Build plugin server binaries for Linux (amd64 + arm64)"
 	@echo "  webapp       - Build the webapp bundle"
-	@echo "  bundle       - Create server-only distributable plugin bundle"
-	@echo "  bundle INCLUDE_WEBAPP=true - Create internal webapp bundle with -webapp suffix"
+	@echo "  bundle       - Create public bundle with ScopedTeamNames admin setting"
+	@echo "  bundle INCLUDE_WEBAPP=true - Create internal bundle with classify RHS and -webapp suffix"
 	@echo "  test         - Run Go tests with the race detector"
 	@echo "  vet          - Run go vet"
 	@echo "  verify       - Run Go tests and webapp build"

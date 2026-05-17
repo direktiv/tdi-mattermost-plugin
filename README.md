@@ -25,7 +25,8 @@ your environment.
 - Mattermost Server `9.0.0` or later. Some optional hooks require newer server
   versions; see the hook matrix in `docs/architecture/`.
 - Go version from `go.mod`.
-- Node.js 22 to build the webapp bundle and read `plugin.json` during release.
+- Node.js 22 to run verification, read `plugin.json` during release, and build
+  the optional internal webapp bundle.
 - Reachable external policy endpoints matching the plugin's configured TDI URL,
   namespace, and enabled policy paths when policy checks are enabled.
 
@@ -54,14 +55,32 @@ make verify
 make bundle
 ```
 
-The bundle is written to `dist/com.archtis.mattermost-policy-plugin-<version>.tar.gz`
-and contains the Linux server binaries (amd64 + arm64), the webapp bundle,
-and `plugin.json`.
+The public bundle is written to
+`dist/com.archtis.mattermost-policy-plugin-<version>.tar.gz` and contains the
+Linux server binaries (amd64 + arm64), the webapp code required for the
+`ScopedTeamNames` System Console setting, and `plugin.json`.
+
+The public webapp registers only the custom team selector. It does not register
+the classify-channel RHS or channel header button, and the public packaged
+manifest removes the classify-only `MattermostAPIToken` setting.
+
+For internal deployments that need the RHS and custom System Console team
+selector:
+
+```bash
+make bundle INCLUDE_WEBAPP=true
+```
+
+That creates:
+
+```text
+dist/com.archtis.mattermost-policy-plugin-<version>-webapp.tar.gz
+```
 
 The version is read from `plugin.json`; override it with `PLUGIN_VERSION`:
 
 ```bash
-make bundle PLUGIN_VERSION=1.0.5
+make bundle PLUGIN_VERSION=1.1.2
 ```
 
 ## Release
@@ -70,8 +89,8 @@ GitHub Actions builds and publishes release tarballs when a `v*` tag is pushed.
 The tag version must match `plugin.json`.
 
 ```bash
-git tag v1.0.5
-git push origin v1.0.5
+git tag v1.1.2
+git push origin v1.1.2
 ```
 
 See `docs/operations/release-hygiene.md` for the release process.

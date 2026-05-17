@@ -48,7 +48,7 @@ See `hook-behavior-matrix.md` for the detailed mapping.
 ├── .github/workflows/          GitHub CI and release workflows
 ├── docs/                       Public documentation and reference notes
 ├── scripts/                    Verification and release helper scripts
-├── webapp/                     Mattermost webapp bundle (RHS + custom admin settings)
+├── webapp/                     Public admin setting UI plus optional internal RHS
 ├── main.go                     Server plugin hooks and TDI client logic
 ├── configuration.go            Plugin configuration and validation
 ├── scope.go                    Team-scoping helpers used by every hook

@@ -36,9 +36,28 @@ Create the distributable Mattermost plugin bundle with:
 make bundle
 ```
 
-The bundle contains the Linux server binaries (amd64 + arm64), the webapp
-bundle, and `plugin.json`. It is written to `dist/` and should be published as
-a release artifact, not committed to Git.
+The public bundle contains the Linux server binaries (amd64 + arm64), the
+webapp code required for the `ScopedTeamNames` System Console setting, and
+`plugin.json`.
+
+The public webapp registers only the custom team selector. It does not register
+the classify-channel RHS or channel header button, and the public packaged
+manifest removes the classify-only `MattermostAPIToken` setting.
+
+The bundle is written to `dist/` and should be published as a release artifact,
+not committed to Git.
+
+For internal deployments that need the optional Mattermost webapp:
+
+```bash
+make bundle INCLUDE_WEBAPP=true
+```
+
+Internal webapp bundles use a distinct filename:
+
+```text
+dist/com.archtis.mattermost-policy-plugin-<version>-webapp.tar.gz
+```
 
 CI writes `dist/SHA256SUMS` beside bundle artifacts so releases can be verified
 after download.
