@@ -80,7 +80,7 @@ dist/com.archtis.mattermost-policy-plugin-<version>-webapp.tar.gz
 The version is read from `plugin.json`; override it with `PLUGIN_VERSION`:
 
 ```bash
-make bundle PLUGIN_VERSION=1.1.2
+make bundle PLUGIN_VERSION=1.3.0
 ```
 
 ## Release
@@ -89,8 +89,8 @@ GitHub Actions builds and publishes release tarballs when a `v*` tag is pushed.
 The tag version must match `plugin.json`.
 
 ```bash
-git tag v1.1.2
-git push origin v1.1.2
+git tag v1.3.0
+git push origin v1.3.0
 ```
 
 See `docs/operations/release-hygiene.md` for the release process.
