@@ -71,7 +71,10 @@ func TestFileWillBeUploadedAllowsAndCopiesOutput(t *testing.T) {
 	defer api.AssertExpectations(t)
 	api.On("GetUser", "user-id").Return(&model.User{Id: "user-id", Username: "alice", Email: "alice@example.com"}, nil).Once()
 	api.On("GetChannel", "channel-id").Return(&model.Channel{Id: "channel-id", Name: "general", Header: "header"}, nil).Once()
-	api.On("GetPropertyGroup", model.CustomProfileAttributesPropertyGroupName).Return((*model.PropertyGroup)(nil), nil).Once()
+	// No CPA configured: neither the 11.8+ ("access_control") nor the legacy
+	// ("custom_profile_attributes") property group resolves.
+	api.On("GetPropertyGroup", cpaPropertyGroupNameCurrent).Return((*model.PropertyGroup)(nil), nil).Once()
+	api.On("GetPropertyGroup", cpaPropertyGroupNameLegacy).Return((*model.PropertyGroup)(nil), nil).Once()
 	api.On("LogInfo", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return().Maybe()
 
 	var policyRequest map[string]interface{}

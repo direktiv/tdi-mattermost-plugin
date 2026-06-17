@@ -404,13 +404,46 @@ func (p *Plugin) buildFileAttachments(fileIds []string) []FileAttachmentInfo {
 	return out
 }
 
+// Custom profile attribute property group names.
+//
+// As of Mattermost 11.8 the CPA fields and values were migrated into the
+// property group named "access_control"; the original
+// "custom_profile_attributes" group is deprecated and empty on those servers.
+// Pre-11.8 servers only have the original group. We deliberately use string
+// literals rather than the model constants because the constant names differ
+// across server/public versions (CustomProfileAttributesPropertyGroupName was
+// renamed to DeprecatedCPAPropertyGroupName in 11.8), and we want this plugin
+// to build and run against both old and new Mattermost releases.
+const (
+	cpaPropertyGroupNameCurrent = "access_control"           // Mattermost 11.8+
+	cpaPropertyGroupNameLegacy  = "custom_profile_attributes" // pre-11.8
+)
+
 // mergeCustomProfileAttributes fetches custom profile attributes (e.g. SecurityClearance, Nationality)
 // from Mattermost Enterprise System properties and merges them into attributes by field name.
 // Requires Mattermost v10.10+ and Enterprise. Same data as GET /api/v4/users/{id}/custom_profile_attributes.
+//
+// CPA values live in the "access_control" group on 11.8+ and in the
+// "custom_profile_attributes" group on earlier releases, so we try each in
+// turn and use the first group that actually yields values. On a server where
+// only the legacy group exists (pre-11.8) the current-name lookup simply
+// resolves to nothing and we fall through — preserving the original behaviour.
 func (p *Plugin) mergeCustomProfileAttributes(userID string, attributes map[string]interface{}) {
-	group, err := p.API.GetPropertyGroup(model.CustomProfileAttributesPropertyGroupName)
+	for _, groupName := range []string{cpaPropertyGroupNameCurrent, cpaPropertyGroupNameLegacy} {
+		if p.mergeCPAFromGroup(userID, groupName, attributes) {
+			return
+		}
+	}
+}
+
+// mergeCPAFromGroup merges the user's custom profile attribute values from a
+// single named property group into attributes. It returns true when the group
+// existed and yielded at least one non-empty value, so the caller can stop
+// trying further (version-dependent) group names.
+func (p *Plugin) mergeCPAFromGroup(userID, groupName string, attributes map[string]interface{}) bool {
+	group, err := p.API.GetPropertyGroup(groupName)
 	if err != nil || group == nil || group.ID == "" {
-		return
+		return false
 	}
 	opts := model.PropertyValueSearchOpts{
 		GroupID:    group.ID,
@@ -420,12 +453,12 @@ func (p *Plugin) mergeCustomProfileAttributes(userID string, attributes map[stri
 	}
 	values, err := p.API.SearchPropertyValues(group.ID, opts)
 	if err != nil || len(values) == 0 {
-		return
+		return false
 	}
 	fieldOpts := model.PropertyFieldSearchOpts{GroupID: group.ID, PerPage: 50}
 	fields, err := p.API.SearchPropertyFields(group.ID, fieldOpts)
 	if err != nil || len(fields) == 0 {
-		return
+		return false
 	}
 	fieldIDToName := make(map[string]string)
 	for _, f := range fields {
@@ -433,6 +466,7 @@ func (p *Plugin) mergeCustomProfileAttributes(userID string, attributes map[stri
 			fieldIDToName[f.ID] = f.Name
 		}
 	}
+	merged := false
 	for _, pv := range values {
 		if pv == nil || pv.FieldID == "" {
 			continue
@@ -447,8 +481,10 @@ func (p *Plugin) mergeCustomProfileAttributes(userID string, attributes map[stri
 		}
 		if val != "" {
 			attributes[name] = val
+			merged = true
 		}
 	}
+	return merged
 }
 
 // sendDenialMessage sends a DM to a user explaining why their action was denied
