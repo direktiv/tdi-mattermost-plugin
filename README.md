@@ -8,6 +8,8 @@ and audit or remediation checks where Mattermost only exposes an after-action
 hook. Enable only the policies that have matching external policy endpoints in
 your environment.
 
+Released 18th June 2026
+
 ## Capabilities
 
 - Message, message edit, file upload, login, push notification, and server
